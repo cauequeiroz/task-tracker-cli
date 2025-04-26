@@ -27,30 +27,29 @@ export class TaskDatabase {
         }, null, 2))
     }
 
-    isValidId(id) {
-        return !!this.tasks.find(item => item.id === id);
-    }
-
     save(task) {
         this.tasks.push(task);
         this.nextAvailableId += 1;
-
         this.updateDatabase();
     }
 
     update(id, description) {
-        this.tasks = this.tasks.map(item => {
-            if (item.id !== id) {
-                return item;
-            }
-
-            return {
-                ...item,
-                description,
-                updatedAt: new Date().toLocaleString()
-            }
-        });
+        this.tasks = this.tasks.map(item => item.id !== id ? item : ({
+            ...item,
+            description,
+            updatedAt: new Date().toLocaleString()
+        }));
 
         this.updateDatabase();
     } 
+
+    delete(id) {
+        this.tasks = this.tasks.filter(item => item.id !== id);
+        this.updateDatabase();
+    }
+
+    deleteAll() {
+        this.tasks = [];
+        this.updateDatabase();
+    }
 }
