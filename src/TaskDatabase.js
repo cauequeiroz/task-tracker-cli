@@ -20,6 +20,17 @@ export class TaskDatabase {
         this.nextAvailableId = savedData.nextAvailableId;
     }
 
+    async updateDatabase() {
+        await fs.writeFile(this.jsonPath, JSON.stringify({
+            tasks: this.tasks,
+            nextAvailableId: this.nextAvailableId
+        }, null, 2))
+    }
+
+    isValidId(id) {
+        return !!this.tasks.find(item => item.id === id);
+    }
+
     save(task) {
         this.tasks.push(task);
         this.nextAvailableId += 1;
@@ -27,10 +38,19 @@ export class TaskDatabase {
         this.updateDatabase();
     }
 
-    async updateDatabase() {
-        await fs.writeFile(this.jsonPath, JSON.stringify({
-            tasks: this.tasks,
-            nextAvailableId: this.nextAvailableId
-        }, null, 2))
-    }
+    update(id, description) {
+        this.tasks = this.tasks.map(item => {
+            if (item.id !== id) {
+                return item;
+            }
+
+            return {
+                ...item,
+                description,
+                updatedAt: new Date().toLocaleString()
+            }
+        });
+
+        this.updateDatabase();
+    } 
 }
