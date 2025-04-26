@@ -1,12 +1,18 @@
 import { Task } from "./model/Task.js";
+import { TaskList } from "./model/TaskList.js";
 import { isValidNumber, isValidString } from "./utils.js";
 
 export class TaskController {
     constructor(database) {
         this.database = database;
+        this.taskList = new TaskList();
     }
 
-    init(userInput) {
+    async init(userInput) {
+        const savedData = await this.database.read();
+        this.taskList.tasks = savedData.tasks;
+        this.taskList.nextAvailableId = savedData.nextAvailableId;
+
         try {
             switch(userInput[0]) {
                 case 'add':
@@ -25,8 +31,10 @@ export class TaskController {
                     throw new Error('You must pass a valid command.');
             }
         } catch(error) {
-            console.log(`${error}`)
+            console.log(`[ERROR] ${error.message}`)
         }
+
+        this.database.write(this.taskList);
     }
 
     add(description) {
@@ -34,10 +42,7 @@ export class TaskController {
             throw new Error('You must pass a task description as first argument.');
         }
 
-        const task = new Task(this.database.nextAvailableId, description);        
-        this.database.save(task);
-
-        console.log(`Task added successfully (ID: ${task.id})`);
+        this.taskList.add(description);
     }
 
     update(id, description) {
@@ -49,7 +54,7 @@ export class TaskController {
             throw new Error('You must pass a task description as second argument.');
         }
 
-        this.database.update(Number(id), description);
+        this.taskList.update(Number(id), description);
     }
 
     delete(id) {
@@ -57,10 +62,10 @@ export class TaskController {
             throw new Error('You mast pass a valid task id as first argument');
         }
 
-        this.database.delete(Number(id));
+        this.taskList.delete(Number(id));
     }
 
     deleteAll() {
-        this.database.deleteAll();
+        this.taskList.deleteAll();
     }
 }
