@@ -1,5 +1,5 @@
-import { Task } from "./model/Task.js";
-import { TaskList } from "./model/TaskList.js";
+import { STATUS } from "./Status.js";
+import { TaskList } from "./TaskList.js";
 import { isValidNumber, isValidString } from "./utils.js";
 
 export class TaskController {
@@ -30,6 +30,9 @@ export class TaskController {
                 case 'mark-done':
                     this.markDone(userInput[1]);
                     break;
+                case 'list':
+                    this.list(userInput[1]);
+                    break;
                 default:
                     throw new Error('You must pass a valid command.');
             }
@@ -41,46 +44,57 @@ export class TaskController {
     }
 
     add(description) {
-        if (!isValidString(description)) {
-            throw new Error('You must pass a task description as first argument.');
-        }
+        this.validateDescription(description);
 
         this.taskList.add(description);
     }
 
     update(id, description) {
-        if (!isValidNumber(id) || !this.taskList.isValidId(Number(id))) {
-            throw new Error('You mast pass a valid task id as first argument');
-        }
-
-        if (!isValidString(description)) {
-            throw new Error('You must pass a task description as second argument.');
-        }
+        this.validateId(id);   
+        this.validateDescription(description);
 
         this.taskList.update(Number(id), description);
     }
 
     delete(id) {
-        if (!isValidNumber(id) || !this.taskList.isValidId(Number(id))) {
-            throw new Error('You mast pass a valid task id as first argument');
-        }        
+        this.validateId(id);   
 
         this.taskList.delete(Number(id));
     }
 
     markInProgress(id) {
-        if (!isValidNumber(id) || !this.taskList.isValidId(Number(id))) {
-            throw new Error('You mast pass a valid task id as first argument');
-        }
+        this.validateId(id);   
 
         this.taskList.markInProgress(Number(id));
     }
 
     markDone(id) {
-        if (!isValidNumber(id) || !this.taskList.isValidId(Number(id))) {
-            throw new Error('You mast pass a valid task id as first argument');
-        }
+        this.validateId(id);   
 
         this.taskList.markDone(Number(id));
+    }
+
+    list(filter) {
+        this.validateFilter(filter);
+
+        this.taskList.list(filter ?? null);
+    }
+
+    validateId(id) {
+        if (!isValidNumber(id) || !this.taskList.isValidId(Number(id))) {
+            throw new Error('You mast pass a valid task id as first argument.');
+        }
+    }
+
+    validateDescription(description) {
+        if (!isValidString(description)) {
+            throw new Error('You must pass a task description as second argument.');
+        }
+    }
+
+    validateFilter(filter) {
+        if (filter && (filter.length === 0 || !STATUS.hasOwnProperty(filter))) {
+            throw new Error('You must pass a valid filter as first argument.')
+        }
     }
 }
