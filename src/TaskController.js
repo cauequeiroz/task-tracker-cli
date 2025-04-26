@@ -24,8 +24,11 @@ export class TaskController {
                 case 'delete': 
                     this.delete(userInput[1]);
                     break;
-                case 'delete-all': 
-                    this.deleteAll();
+                case 'mark-in-progress':
+                    this.markInProgress(userInput[1]);
+                    break;
+                case 'mark-done':
+                    this.markDone(userInput[1]);
                     break;
                 default:
                     throw new Error('You must pass a valid command.');
@@ -46,7 +49,7 @@ export class TaskController {
     }
 
     update(id, description) {
-        if (!isValidNumber(id)) {
+        if (!isValidNumber(id) || !this.taskList.isValidId(Number(id))) {
             throw new Error('You mast pass a valid task id as first argument');
         }
 
@@ -58,14 +61,26 @@ export class TaskController {
     }
 
     delete(id) {
-        if (!isValidNumber(id)) {
+        if (!isValidNumber(id) || !this.taskList.isValidId(Number(id))) {
             throw new Error('You mast pass a valid task id as first argument');
-        }
+        }        
 
         this.taskList.delete(Number(id));
     }
 
-    deleteAll() {
-        this.taskList.deleteAll();
+    markInProgress(id) {
+        if (!isValidNumber(id) || !this.taskList.isValidId(Number(id))) {
+            throw new Error('You mast pass a valid task id as first argument');
+        }
+
+        this.taskList.markInProgress(Number(id));
+    }
+
+    markDone(id) {
+        if (!isValidNumber(id) || !this.taskList.isValidId(Number(id))) {
+            throw new Error('You mast pass a valid task id as first argument');
+        }
+
+        this.taskList.markDone(Number(id));
     }
 }

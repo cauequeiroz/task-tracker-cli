@@ -1,3 +1,4 @@
+import { STATUS } from "./Status.js";
 import { Task } from "./Task.js";
 
 export class TaskList {
@@ -27,7 +28,23 @@ export class TaskList {
         this.tasks = this.tasks.filter(item => item.id !== id);
     }
 
-    deleteAll() {
-        this.tasks = [];
+    markInProgress(id) {
+        this.tasks = this.tasks.map(item => item.id !== id ? item : ({
+            ...item,
+            status: STATUS.INPROGRESS,
+            updatedAt: new Date().toLocaleString()
+        }));
+    }
+
+    markDone(id) {
+        this.tasks = this.tasks.map(item => item.id !== id ? item : ({
+            ...item,
+            status: STATUS.DONE,
+            updatedAt: new Date().toLocaleString()
+        }));
+    }
+
+    isValidId(id) {
+        return Boolean(this.tasks.find(item => item.id === id));
     }
 }
