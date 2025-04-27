@@ -10,4 +10,5 @@ const database = new pg.Pool({
     host: 'localhost',
     port: 5432
 });
+
 new TaskController(database).init(process.argv.slice(2));

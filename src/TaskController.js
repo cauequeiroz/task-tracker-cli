@@ -5,14 +5,10 @@ import { isValidNumber, isValidString } from "./utils.js";
 export class TaskController {
     constructor(database) {
         this.database = database;
-        this.taskList = new TaskList();
+        this.taskList = new TaskList(database);
     }
 
     async init(userInput) {
-        const savedData = await this.database.read();
-        this.taskList.tasks = savedData.tasks;
-        this.taskList.nextAvailableId = savedData.nextAvailableId;
-
         try {
             switch(userInput[0]) {
                 case 'add':
@@ -39,8 +35,6 @@ export class TaskController {
         } catch(error) {
             console.log(`[ERROR] ${error.message}`)
         }
-
-        this.database.write(this.taskList);
     }
 
     add(description) {
@@ -75,13 +69,11 @@ export class TaskController {
     }
 
     list(filter) {
-        this.validateFilter(filter);
-
         this.taskList.list(filter ?? null);
     }
 
     validateId(id) {
-        if (!isValidNumber(id) || !this.taskList.isValidId(Number(id))) {
+        if (!isValidNumber(id)) {
             throw new Error('You mast pass a valid task id as first argument.');
         }
     }
@@ -89,12 +81,6 @@ export class TaskController {
     validateDescription(description) {
         if (!isValidString(description)) {
             throw new Error('You must pass a task description as second argument.');
-        }
-    }
-
-    validateFilter(filter) {
-        if (filter && (filter.length === 0 || !STATUS.hasOwnProperty(filter))) {
-            throw new Error('You must pass a valid filter as first argument.')
         }
     }
 }

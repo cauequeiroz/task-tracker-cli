@@ -1,68 +1,120 @@
-import { STATUS, STATUS_TEXT } from "./Status.js";
-import { Task } from "./Task.js";
 import { styleText } from "node:util";
 
 export class TaskList {
-    constructor() {
-        this.nextAvailableId = 0;
-        this.tasks = [];
+    constructor(database) {
+        this.database = database;
     }
 
-    add(description) {
-        const task = new Task(this.nextAvailableId, description);    
+    async add(description) {
+        const timestamp = new Date().toLocaleString();
+        const { rows } = await this.database.query(`
+            INSERT INTO task
+                (description, status_id, created_at, updated_at)
+            VALUES
+                ($1, 1, $2, $2)
+            RETURNING id;
+        `, [description, timestamp]);
 
-        this.tasks.push(task);
-        this.nextAvailableId += 1;
-
-        console.log(`Task added successfully (ID: ${task.id})`);
+        console.log(`Task added successfully (ID: ${rows[0].id})`);
+        this.database.end();
     }
 
-    update(id, description) {
-        this.tasks = this.tasks.map(item => item.id !== id ? item : ({
-            ...item,
-            description,
-            updatedAt: new Date().toLocaleString()
-        }));
+    async update(id, description) {
+        const timestamp = new Date().toLocaleString();
+        const { rowCount } = await this.database.query(`
+            UPDATE task SET
+                description = $2, updated_at = $3
+            WHERE id = $1;
+        `, [id, description, timestamp]);
+        
+        this.database.end();
+
+        if (rowCount === 0) {
+            throw new Error('You mast pass a valid task id as first argument.');
+        }
     } 
 
-    delete(id) {
-        this.tasks = this.tasks.filter(item => item.id !== id);
+    async delete(id) {
+        const { rowCount } = await this.database.query(`
+            DELETE FROM task WHERE id = $1;
+        `, [id]);
+
+        this.database.end();
+
+        if (rowCount === 0) {
+            throw new Error('You mast pass a valid task id as first argument.');
+        }
     }
 
-    markInProgress(id) {
-        this.tasks = this.tasks.map(item => item.id !== id ? item : ({
-            ...item,
-            status: STATUS["in-progress"],
-            updatedAt: new Date().toLocaleString()
-        }));
+    async markInProgress(id) {
+        const timestamp = new Date().toLocaleString();
+        const { rowCount } = await this.database.query(`
+            UPDATE task SET
+                status_id = 2, updated_at = $2
+            WHERE id = $1;
+        `, [id, timestamp]);
+
+        this.database.end();
+
+        if (rowCount === 0) {
+            throw new Error('You mast pass a valid task id as first argument.');
+        }
     }
 
-    markDone(id) {
-        this.tasks = this.tasks.map(item => item.id !== id ? item : ({
-            ...item,
-            status: STATUS.done,
-            updatedAt: new Date().toLocaleString()
-        }));
+    async markDone(id) {
+        const timestamp = new Date().toLocaleString();
+        const { rowCount } = await this.database.query(`
+            UPDATE task SET
+                status_id = 3, updated_at = $2
+            WHERE id = $1;
+        `, [id, timestamp]);
+
+        this.database.end();
+
+        if (rowCount === 0) {
+            throw new Error('You mast pass a valid task id as first argument.');
+        }
     }
 
-    list(filter) {
-        let filteredTasks = this.tasks;
-
+    async list(filter) {
+        let filterId = null;
+        
         if (filter) {
-            filteredTasks = this.tasks.filter(task => task.status === STATUS[filter]);
+            const { rows: statusResult, rowCount } = await this.database.query(`
+                SELECT id, name FROM status
+                WHERE name = $1;
+            `, [filter]);
+            
+            if (rowCount === 0) {
+                this.database.end();
+                throw new Error('You must pass a valid filter as first argument.');
+            }
+
+            filterId = statusResult[0].id;
         }
 
+        let query = `
+            SELECT t.id, t.description, s.readable_name AS status_name, t.created_at, t.updated_at
+            FROM task t
+            INNER JOIN status s ON s.id = t.status_id
+        `;
+        let params = [];
+
+        if (filterId) {
+            query += ' WHERE t.status_id = $1';
+            params.push(filterId);
+        }
+
+        const { rows: taskResult } = await this.database.query(query, params);
+        this.database.end();
+
         console.log('\n');
-        filteredTasks.forEach(task => {
+        taskResult.forEach(task => {
             console.log(styleText(['bold', 'bgGray'],`[id: ${task.id}] ${task.description}`));
-            console.log(`   Status: ${STATUS_TEXT[task.status]}`);
-            console.log(`   Created at: ${task.createdAt}`);
-            console.log(`   Updated at: ${task.updatedAt}`);
+            console.log(`   Status: ${task.status_name}`);
+            console.log(`   Created at: ${task.created_at}`);
+            console.log(`   Updated at: ${task.updated_at}`);
         });
         console.log('\n');
-    }
-
-    isValidId(id) {
-        return Boolean(this.tasks.find(item => item.id === id));
     }
 }
