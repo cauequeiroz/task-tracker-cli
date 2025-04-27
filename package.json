@@ -7,6 +7,9 @@
   },
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "setup": "./init-database.sh && npm link"
+  },
+  "dependencies": {
+    "pg": "^8.15.6"
   }
 }
